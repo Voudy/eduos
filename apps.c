@@ -17,3 +17,9 @@ void readAndPrint(void) {
 	os_sys_write(buffer);
 	free(buffer);
 }
+
+void printArgs(int argc, char *argv[]) {
+	for (int i = 1; i < argc; ++i) {
+		os_sys_write(argv[i]);
+	}
+}

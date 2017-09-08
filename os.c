@@ -11,7 +11,9 @@
 #include <ucontext.h>
 #include <sys/ucontext.h>
 
+void printMsg();
 void readAndPrint();
+void printArgs();
 
 typedef int(*sys_call_t)(int syscall,
 		unsigned long arg1, unsigned long arg2,
@@ -90,6 +92,6 @@ int os_sys_read(char *buffer, int size) {
 
 int main(int argc, char *argv[]) {
 	os_init();
-	readAndPrint();
+	printArgs(argc, argv);
 	return 0;
 }

@@ -13,7 +13,7 @@ void readAndPrint(void) {
 	const int maxWordLen = 255;
 	size_t sizeOfWord = maxWordLen * sizeof(char);
 	char *buffer = (char *) malloc(sizeOfWord);
-	int readedWord = os_sys_read(buffer, sizeOfWord);
+	int readWord = os_sys_read(buffer, sizeOfWord);
 	os_sys_write(buffer);
 	free(buffer);
 }

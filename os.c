@@ -87,6 +87,7 @@ int os_sys_read(char *buf, int bytes_amount) {
 int main(int argc, char *argv[]) {
 	os_init();
 	shell();
+	return 0;
 }
 
 int shell(void) {

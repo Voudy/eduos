@@ -1,7 +1,15 @@
 
 #include "os.h"
 
-void app1(void) {
-	const char *msg = "Hello, World!\n";
-	os_sys_write(msg);
+int app1(int argc, char* argv[]) {
+	if (argc > 1) {
+		os_sys_write("Hello, ");
+		os_sys_write(argv[1]);
+		os_sys_write("!\n");
+	}
+	else {
+		os_sys_write("Hello, World!\n");
+	}
+
+	return 0;
 }

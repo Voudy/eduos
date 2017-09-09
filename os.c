@@ -22,9 +22,18 @@ int sys_write(int syscall,
 	const char *msg = (const char *) arg1;
 	return write(STDOUT_FILENO, msg, strlen(msg));
 }
+int sys_read(int syscall,
+		unsigned long arg1, unsigned long arg2,
+		unsigned long arg3, unsigned long arg4,
+		void *rest) {
+	void *buf = (void *) arg1;
+	int bytes_amount = (int) arg2;
+	return read(STDIN_FILENO, buf, bytes_amount);
+}
 
 static const sys_call_t sys_table[] = {
 	sys_write,
+	sys_read,
 };
 
 static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
@@ -71,9 +80,43 @@ static int os_syscall(int syscall,
 int os_sys_write(const char *msg) {
 	return os_syscall(0, (unsigned long) msg, 0, 0, 0, NULL);
 }
+int os_sys_read(char *buf, int bytes_amount) {
+	return os_syscall(1, (unsigned long) buf, (unsigned long) bytes_amount, 0, 0, NULL);
+}
 
 int main(int argc, char *argv[]) {
 	os_init();
-	app1();
-	return 0;
+	shell();
+}
+
+int shell(void) {
+	while (1) {
+		const int string_size = 255;
+		char buf[string_size];
+		int actual_size = os_sys_read(buf, string_size * sizeof(char));
+		buf[actual_size - 1] = ' ';
+		buf[actual_size] = '\0'; 
+
+		char* calls[30];
+		int calls_amount = 0;
+		char* call = strtok(buf, ";");
+		while (call != NULL) {
+			calls[calls_amount++] = call;
+			call = strtok(NULL, ";");
+		}
+
+		for (int i = 0; i < calls_amount; i++) {
+			char* words[30];
+			int words_amount = 0;
+			char* word = strtok(calls[i], " ");
+			while (word != NULL) {
+				words[words_amount++] = word;
+				word = strtok(NULL, " ");
+			}
+
+			if (strcmp(words[0], "app1") == 0) {
+				app1(words_amount, words);
+			}
+		}
+	}
 }

@@ -1,5 +1,6 @@
 
 #define _GNU_SOURCE
+#define true 1
 
 #include <string.h>
 #include <stdio.h>
@@ -27,7 +28,7 @@ int sys_read(int syscall,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
 	void *buf = (void *) arg1;
-	int bytes_amount = (int) arg2;
+	size_t bytes_amount = (size_t) arg2;
 	return read(STDIN_FILENO, buf, bytes_amount);
 }
 
@@ -80,7 +81,7 @@ static int os_syscall(int syscall,
 int os_sys_write(const char *msg) {
 	return os_syscall(0, (unsigned long) msg, 0, 0, 0, NULL);
 }
-int os_sys_read(char *buf, int bytes_amount) {
+int os_sys_read(char *buf, size_t bytes_amount) {
 	return os_syscall(1, (unsigned long) buf, (unsigned long) bytes_amount, 0, 0, NULL);
 }
 
@@ -91,7 +92,7 @@ int main(int argc, char *argv[]) {
 }
 
 int shell(void) {
-	while (1) {
+	while (true) {
 		const int string_size = 255;
 		char buf[string_size];
 		int actual_size = os_sys_read(buf, string_size * sizeof(char));

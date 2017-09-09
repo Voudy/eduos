@@ -1,6 +1,9 @@
 
 #define _GNU_SOURCE
+
 #define true 1
+#define sys_write_index 0
+#define sys_read_index 1
 
 #include <string.h>
 #include <stdio.h>

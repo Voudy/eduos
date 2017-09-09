@@ -98,16 +98,16 @@ int shell(void) {
 		buf[actual_size - 1] = ' ';
 		buf[actual_size] = '\0'; 
 
-		char* calls[30];
+		char *calls[30];
 		int calls_amount = 0;
-		char* call = strtok(buf, ";");
+		char *call = strtok(buf, ";");
 		while (call != NULL) {
 			calls[calls_amount++] = call;
 			call = strtok(NULL, ";");
 		}
 
 		for (int i = 0; i < calls_amount; i++) {
-			char* words[30];
+			char *words[30];
 			int words_amount = 0;
 			char* word = strtok(calls[i], " ");
 			while (word != NULL) {

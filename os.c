@@ -82,10 +82,10 @@ static int os_syscall(int syscall,
 }
 
 int os_sys_write(const char *msg) {
-	return os_syscall(0, (unsigned long) msg, 0, 0, 0, NULL);
+	return os_syscall(sys_write_index, (unsigned long) msg, 0, 0, 0, NULL);
 }
 int os_sys_read(char *buf, size_t bytes_amount) {
-	return os_syscall(1, (unsigned long) buf, (unsigned long) bytes_amount, 0, 0, NULL);
+	return os_syscall(sys_read_index, (unsigned long) buf, (unsigned long) bytes_amount, 0, 0, NULL);
 }
 
 int main(int argc, char *argv[]) {

@@ -11,9 +11,7 @@
 #include <ucontext.h>
 #include <sys/ucontext.h>
 
-void printMsg();
-void readAndPrint();
-void printArgs();
+void listener();
 
 typedef int(*sys_call_t)(int syscall,
 		unsigned long arg1, unsigned long arg2,
@@ -37,8 +35,17 @@ int sys_read(int syscall,
 	return read(STDIN_FILENO, buffer, size);
 }
 
+int sys_malloc(int syscall,
+		unsigned long arg1, unsigned long arg2,
+		unsigned long arg3, unsigned long arg4,
+		void *rest) {
+	const size_t size = (size_t) arg1;
+	void * ptr = (void *) malloc(size);
+	return (intptr_t) ptr;
+}
+
 static const sys_call_t sys_table[] = {
-	sys_write, sys_read,
+	sys_write, sys_read, sys_malloc,
 };
 
 static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
@@ -90,8 +97,12 @@ int os_sys_read(char *buffer, int size) {
 	return os_syscall(1, (unsigned long) buffer, size, 0, 0, NULL);
 }
 
+int os_sys_malloc(const size_t size) {
+	return os_syscall(2, (unsigned long) size, 0, 0, 0, NULL);
+}
+
 int main(int argc, char *argv[]) {
 	os_init();
-	printArgs(argc, argv);
+	listener();
 	return 0;
 }

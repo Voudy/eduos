@@ -5,5 +5,6 @@
 
 extern int os_sys_write(const char *msg);
 extern int os_sys_read(char *buffer, size_t size);
+extern int os_sys_malloc(const size_t size);
 
 #endif /* EDUOS_OS_H */

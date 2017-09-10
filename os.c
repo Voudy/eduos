@@ -1,7 +1,6 @@
 
 #define _GNU_SOURCE
 
-#define true 1
 #define sys_write_index 0
 #define sys_read_index 1
 
@@ -31,7 +30,7 @@ int sys_read(int syscall,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
 	void *buf = (void *) arg1;
-	size_t bytes_amount = (size_t) arg2;
+	int bytes_amount = (int) arg2;
 	return read(STDIN_FILENO, buf, bytes_amount);
 }
 
@@ -84,7 +83,7 @@ static int os_syscall(int syscall,
 int os_sys_write(const char *msg) {
 	return os_syscall(sys_write_index, (unsigned long) msg, 0, 0, 0, NULL);
 }
-int os_sys_read(char *buf, size_t bytes_amount) {
+int os_sys_read(char *buf, int bytes_amount) {
 	return os_syscall(sys_read_index, (unsigned long) buf, (unsigned long) bytes_amount, 0, 0, NULL);
 }
 
@@ -92,36 +91,4 @@ int main(int argc, char *argv[]) {
 	os_init();
 	shell();
 	return 0;
-}
-
-int shell(void) {
-	while (true) {
-		const int string_size = 255;
-		char buf[string_size];
-		int actual_size = os_sys_read(buf, string_size * sizeof(char));
-		buf[actual_size - 1] = ' ';
-		buf[actual_size] = '\0'; 
-
-		char *calls[30];
-		int calls_amount = 0;
-		char *call = strtok(buf, ";");
-		while (call != NULL) {
-			calls[calls_amount++] = call;
-			call = strtok(NULL, ";");
-		}
-
-		for (int i = 0; i < calls_amount; i++) {
-			char *words[30];
-			int words_amount = 0;
-			char* word = strtok(calls[i], " ");
-			while (word != NULL) {
-				words[words_amount++] = word;
-				word = strtok(NULL, " ");
-			}
-
-			if (strcmp(words[0], "app1") == 0) {
-				app1(words_amount, words);
-			}
-		}
-	}
 }

@@ -52,7 +52,7 @@ void listener() {
 	int result = 1;
 	while (result == 1) {
 		os_sys_write("> ");	
-		char *buffer = (char *) (intptr_t) os_sys_malloc(100 * sizeof(char));
+		char *buffer = (char *) (intptr_t) os_sys_malloc(100);
 		int readWord = os_sys_read(buffer, 100 * sizeof(char));
 		buffer[strlen(buffer) - 1] = ';';
 		char *splitCommand = strtok(buffer, ";");
@@ -65,5 +65,6 @@ void listener() {
 		for (int i = 0; i < comCnt; ++i) {
 			result = doTask(com[i]);	
 		}
+		free(buffer);
 	}
 }

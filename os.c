@@ -5,13 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <stddef.h>
 #include <unistd.h>
 #include <signal.h>
 #include <ucontext.h>
 #include <sys/ucontext.h>
 
-void listener();
+void shell();
 
 typedef int(*sys_call_t)(int syscall,
 		unsigned long arg1, unsigned long arg2,
@@ -31,21 +30,13 @@ int sys_read(int syscall,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
 	void *buffer = (void *) arg1;
-	const size_t size = (size_t) arg2;
+	const int size = (int) arg2;
 	return read(STDIN_FILENO, buffer, size);
 }
 
-int sys_malloc(int syscall,
-		unsigned long arg1, unsigned long arg2,
-		unsigned long arg3, unsigned long arg4,
-		void *rest) {
-	const size_t size = (size_t) arg1;
-	void * ptr = (void *) malloc(size);
-	return (intptr_t) ptr;
-}
-
 static const sys_call_t sys_table[] = {
-	sys_write, sys_read, sys_malloc,
+	sys_write,
+	sys_read,
 };
 
 static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
@@ -97,12 +88,8 @@ int os_sys_read(char *buffer, int size) {
 	return os_syscall(1, (unsigned long) buffer, size, 0, 0, NULL);
 }
 
-int os_sys_malloc(const size_t size) {
-	return os_syscall(2, (unsigned long) size, 0, 0, 0, NULL);
-}
-
 int main(int argc, char *argv[]) {
 	os_init();
-	listener();
+	shell();
 	return 0;
 }

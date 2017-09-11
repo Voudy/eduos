@@ -1,7 +1,6 @@
 
 #include "os.h"
 #include "string.h"
-#include "stdint.h"
 
 void app1(void) {
 	const char *msg = "Hello, World!\n";

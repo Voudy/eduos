@@ -1,6 +1,8 @@
 
+#include <string.h>
+
 #include "os.h"
-#include "string.h"
+#include "apps.h"
 
 static int echo(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i) {

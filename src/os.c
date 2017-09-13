@@ -11,7 +11,8 @@
 #include <ucontext.h>
 #include <sys/ucontext.h>
 
-void shell();
+#include "os.h"
+#include "apps.h"
 
 typedef int(*sys_call_t)(int syscall,
 		unsigned long arg1, unsigned long arg2,

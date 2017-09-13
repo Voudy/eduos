@@ -65,4 +65,5 @@ void shell() {
 			cmd = strtok_r(NULL, comsep, &saveptr);
 		}
 	}
+	os_sys_write("\n");
 }

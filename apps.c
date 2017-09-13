@@ -2,67 +2,65 @@
 #include "os.h"
 #include "string.h"
 
-void app1(void) {
-	const char *msg = "Hello, World!\n";
-	os_sys_write(msg);
-}
-
-void homework1(int argc, char *argv[]) {
-	char *prefix = "Hello, ";
-	char *user = "World";
-	if (argc > 1) {
-		user = argv[1];
+static int echo(int argc, char *argv[]) {
+	for (int i = 1; i < argc; ++i) {
+		os_sys_write(argv[i]);
+		os_sys_write(i == argc - 1 ? "\n" : " ");
 	}
-	char msg[256] = "";
-	strcat(msg, prefix);
-	strcat(msg, user);
-	strcat(msg, "!\n");
-	os_sys_write(msg);
+	return 0;
 }
 
-int doTask(char *command) {
-	char *splitArgs = strtok(command, " ");
+static const struct {
+	const char *name;
+	int(*fn)(int, char *[]);
+} app_list[] = {
+	{ "echo", echo },
+};
+
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
+
+static int do_task(char *command) {
+	char *saveptr;
+	char *arg = strtok_r(command, " ", &saveptr);
 	char *argv[256];
 	int argc = 0;
-	while (splitArgs) {
-		argv[argc++] = splitArgs;
-		splitArgs = strtok(NULL, " ");
+	while (arg) {
+		argv[argc++] = arg;
+		arg = strtok_r(NULL, " ", &saveptr);
 	}
-	if (strcmp(argv[0], "app1") == 0) {
-		app1();
-		return 1;
-	} else if (strcmp(argv[0], "homework1") == 0) {
-		homework1(argc, argv);
-		return 1;
-	} else if (strcmp(argv[0], "exit") == 0) {
-		return 0;
-	} else {
-		char msg[256] = "No such function: ";
-		strcat(msg, argv[0]);
-		strcat(msg, "\n");
-		os_sys_write(msg);
-		return 1;
+
+	for (int i = 0; i < ARRAY_SIZE(app_list); ++i) {
+		if (!strcmp(argv[0], app_list[i].name)) {
+			return app_list[i].fn(argc, argv);
+		}
 	}
+
+	char msg[256] = "No such function: ";
+	strcat(msg, argv[0]);
+	strcat(msg, "\n");
+	os_sys_write(msg);
+	return 1;
 }
 
 void shell() {
-	const char *welcomeMessage = "Welcome to eduos!\nAvailable commands: app1, homework1, exit\n";
-	os_sys_write(welcomeMessage);
-	int result = 1;
-	while (result == 1) {
+	while (1) {
 		os_sys_write("> ");	
-		char buffer[256] = "";
-		int readWord = os_sys_read(buffer, 256);
-		buffer[strlen(buffer) - 1] = ';';
-		char *splitCommand = strtok(buffer, ";");
-		char *com[256];
-		int comCnt = 0;
-		while (splitCommand) {
-			com[comCnt++] = splitCommand;
-			splitCommand = strtok(NULL, ";");
+		char buffer[256];
+		int bytes = os_sys_read(buffer, sizeof(buffer));
+		if (!bytes) {
+			break;
 		}
-		for (int i = 0; i < comCnt; ++i) {
-			result = doTask(com[i]);	
+
+		if (bytes < sizeof(buffer)) {
+			buffer[bytes] = '\0';
+		}
+
+		char *saveptr;
+		const char *comsep = "\n;";
+		char *cmd = strtok_r(buffer, comsep, &saveptr);
+		while (cmd) {
+			do_task(cmd);
+			cmd = strtok_r(NULL, comsep, &saveptr);
 		}
 	}
 }

@@ -14,12 +14,12 @@
 #include "os.h"
 #include "apps.h"
 
-typedef int(*sys_call_t)(int syscall,
+typedef long(*sys_call_t)(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
 		void *rest);
 
-static int sys_write(int syscall,
+static long sys_write(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
@@ -27,7 +27,7 @@ static int sys_write(int syscall,
 	return write(STDOUT_FILENO, msg, strlen(msg));
 }
 
-int sys_read(int syscall,
+static long sys_read(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
@@ -68,11 +68,11 @@ static void os_init(void) {
 	}
 }
 
-static int os_syscall(int syscall,
+static long os_syscall(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
-	int ret;
+	long ret;
 	__asm__ __volatile__(
 		"int $0x81\n"
 		: "=a"(ret)

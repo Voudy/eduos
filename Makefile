@@ -1,10 +1,11 @@
 
 all : image
 
-apps.o : CFLAGS = -ffreestanding --sysroot=/tmp -Wimplicit-function-declaration -Werror
+#src/apps.o : CFLAGS = -ffreestanding --sysroot=/tmp -Wimplicit-function-declaration -Werror
 
-image : os.o apps.o
-	$(CC) -o $@ $^
+image : src/os.o src/apps.o
+	$(CC) $(LDFLAGS) -o $@ $^
 
 clean :
-	rm -f image *.o
+	rm -f image
+	find -name '*.o' -delete

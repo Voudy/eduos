@@ -1,4 +1,4 @@
-apps.o
+**.o
 image
-os.o
+
 .vscode/

@@ -1,8 +1,8 @@
 
 #define _GNU_SOURCE
 
-#define sys_write_index 0
-#define sys_read_index 1
+#define SYS_WRITE 0
+#define SYS_READ 1
 
 #include <string.h>
 #include <stdio.h>
@@ -81,10 +81,10 @@ static int os_syscall(int syscall,
 }
 
 int os_sys_write(const char *msg) {
-	return os_syscall(sys_write_index, (unsigned long) msg, 0, 0, 0, NULL);
+	return os_syscall(SYS_WRITE, (unsigned long) msg, 0, 0, 0, NULL);
 }
 int os_sys_read(char *buf, int bytes_amount) {
-	return os_syscall(sys_read_index, (unsigned long) buf, (unsigned long) bytes_amount, 0, 0, NULL);
+	return os_syscall(SYS_READ, (unsigned long) buf, (unsigned long) bytes_amount, 0, 0, NULL);
 }
 
 int main(int argc, char *argv[]) {

@@ -4,6 +4,8 @@
 #include "os.h"
 #include "apps.h"
 
+extern char *strtok_r(char *str, const char *delim, char **saveptr);
+
 static int echo(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i) {
 		os_sys_write(argv[i]);

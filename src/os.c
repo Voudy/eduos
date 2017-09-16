@@ -48,7 +48,6 @@ static long sys_write(int syscall,
 static int g_have_input;
 
 static void do_other_things(void) {
-	fprintf(stderr, "%s: called\n", __func__);
 	while (!g_have_input) {
 		usleep(500);
 	}
@@ -94,7 +93,6 @@ static long sys_read(int syscall,
 
 	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	while (bytes == -EAGAIN) {
-		sleep(5);
 		g_have_input = 0;
 		unblock_sig(sig);
 		do_other_things();
@@ -127,7 +125,6 @@ static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
 }
 
 static void os_sigiohnd(int sig, siginfo_t *info, void *ctx) {
-	fprintf(stderr, "%s: called\n", __func__);
 	g_have_input = 1;
 }
 

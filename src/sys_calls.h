@@ -3,5 +3,6 @@
 
 extern int os_sys_write(const char *msg);
 extern int os_sys_read(char *buffer, int size);
+extern void os_init(void);
 
 #endif /* EDUOS_OS_H */

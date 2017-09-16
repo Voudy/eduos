@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <ucontext.h>
 #include <sys/ucontext.h>
@@ -30,12 +32,16 @@ typedef long(*sys_call_t)(int syscall,
 		unsigned long arg3, unsigned long arg4,
 		void *rest);
 
+static long errwrap(long res) {
+	return res == -1 ? -errno : res;
+}
+
 static long sys_write(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
 	const char *msg = (const char *) arg1;
-	return write(STDOUT_FILENO, msg, strlen(msg));
+	return errwrap(write(STDOUT_FILENO, msg, strlen(msg)));
 }
 
 static long sys_read(int syscall,
@@ -44,7 +50,11 @@ static long sys_read(int syscall,
 		void *rest) {
 	void *buffer = (void *) arg1;
 	const int size = (int) arg2;
-	return read(STDIN_FILENO, buffer, size);
+	int bytes;
+	do {
+		bytes = errwrap(read(STDIN_FILENO, buffer, size));
+	} while (bytes == -EAGAIN);
+	return bytes;
 }
 
 #define TABLE_LIST(name) sys_ ## name,
@@ -76,6 +86,18 @@ static void os_init(void) {
 
 	if (-1 == sigaction(SIGSEGV, &act, NULL)) {
 		perror("signal set failed");
+		exit(1);
+	}
+
+	int flags;
+	if (-1 == (flags = fcntl(STDIN_FILENO, F_GETFL))) {
+		perror("fcntl GETFL");
+		exit(1);
+	}
+
+	flags |= O_NONBLOCK;
+	if (-1 == fcntl(STDIN_FILENO, F_SETFL, flags)) {
+		perror("fcntl SETFL");
 		exit(1);
 	}
 }

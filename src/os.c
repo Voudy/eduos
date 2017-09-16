@@ -89,13 +89,18 @@ static void os_init(void) {
 		exit(1);
 	}
 
+	if (-1 == fcntl(STDIN_FILENO, F_SETOWN, getpid())) {
+		perror("fcntl SETOWN");
+		exit(1);
+	}
+
 	int flags;
 	if (-1 == (flags = fcntl(STDIN_FILENO, F_GETFL))) {
 		perror("fcntl GETFL");
 		exit(1);
 	}
 
-	flags |= O_NONBLOCK;
+	flags |= O_NONBLOCK | O_ASYNC;
 	if (-1 == fcntl(STDIN_FILENO, F_SETFL, flags)) {
 		perror("fcntl SETFL");
 		exit(1);

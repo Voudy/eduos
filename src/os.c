@@ -44,8 +44,13 @@ static long sys_write(int syscall,
 	return errwrap(write(STDOUT_FILENO, msg, strlen(msg)));
 }
 
+static int g_have_input;
+
 static void do_other_things(void) {
-	pause();
+	fprintf(stderr, "%s: called\n", __func__);
+	while (!g_have_input) {
+		usleep(500);
+	}
 }
 
 static long sys_read(int syscall,
@@ -54,8 +59,10 @@ static long sys_read(int syscall,
 		void *rest) {
 	void *buffer = (void *) arg1;
 	const int size = (int) arg2;
+
 	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	while (bytes == -EAGAIN) {
+		g_have_input = 0;
 		do_other_things();
 		bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	}
@@ -84,6 +91,7 @@ static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
 
 static void os_sigiohnd(int sig, siginfo_t *info, void *ctx) {
 	fprintf(stderr, "%s: called\n", __func__);
+	g_have_input = 1;
 }
 
 static void os_init(void) {

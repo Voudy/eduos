@@ -44,16 +44,21 @@ static long sys_write(int syscall,
 	return errwrap(write(STDOUT_FILENO, msg, strlen(msg)));
 }
 
+static void do_other_things(void) {
+	pause();
+}
+
 static long sys_read(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
 	void *buffer = (void *) arg1;
 	const int size = (int) arg2;
-	int bytes;
-	do {
+	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
+	while (bytes == -EAGAIN) {
+		do_other_things();
 		bytes = errwrap(read(STDIN_FILENO, buffer, size));
-	} while (bytes == -EAGAIN);
+	}
 	return bytes;
 }
 

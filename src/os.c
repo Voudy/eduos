@@ -46,9 +46,9 @@ static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
 	greg_t *regs = uc->uc_mcontext.gregs;
 
 	if (0x81cd == *(uint16_t *) regs[REG_RIP]) {
-		int ret = sys_table[regs[REG_RAX]](regs[REG_RAX], 
-				regs[REG_RBX], regs[REG_RCX], 
-				regs[REG_RDX], regs[REG_RSI], 
+		int ret = sys_table[regs[REG_RAX]](regs[REG_RAX],
+				regs[REG_RBX], regs[REG_RCX],
+				regs[REG_RDX], regs[REG_RSI],
 				(void *) regs[REG_RDI]);
 		regs[REG_RAX] = ret;
 		regs[REG_RIP] += 2;

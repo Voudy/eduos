@@ -48,7 +48,7 @@ static int do_task(char *command) {
 
 void shell() {
 	while (1) {
-		os_sys_write("> ");	
+		os_sys_write("> ");
 		char buffer[256];
 		int bytes = os_sys_read(buffer, sizeof(buffer));
 		if (!bytes) {

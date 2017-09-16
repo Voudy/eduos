@@ -14,6 +14,17 @@
 #include "os.h"
 #include "apps.h"
 
+#define SYSCALL_X(x) \
+	x(write) \
+	x(read) \
+
+
+#define ENUM_LIST(name) os_syscall_nr_ ## name,
+enum syscalls_num {
+	SYSCALL_X(ENUM_LIST)
+};
+#undef ENUM_LIST
+
 typedef long(*sys_call_t)(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
@@ -36,10 +47,11 @@ static long sys_read(int syscall,
 	return read(STDIN_FILENO, buffer, size);
 }
 
+#define TABLE_LIST(name) sys_ ## name,
 static const sys_call_t sys_table[] = {
-	sys_write,
-	sys_read,
+	SYSCALL_X(TABLE_LIST)
 };
+#undef TABLE_LIST
 
 static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
 	ucontext_t *uc = (ucontext_t *) ctx;
@@ -83,11 +95,11 @@ static long os_syscall(int syscall,
 }
 
 int os_sys_write(const char *msg) {
-	return os_syscall(0, (unsigned long) msg, 0, 0, 0, NULL);
+	return os_syscall(os_syscall_nr_write, (unsigned long) msg, 0, 0, 0, NULL);
 }
 
 int os_sys_read(char *buffer, int size) {
-	return os_syscall(1, (unsigned long) buffer, size, 0, 0, NULL);
+	return os_syscall(os_syscall_nr_read, (unsigned long) buffer, size, 0, 0, NULL);
 }
 
 int main(int argc, char *argv[]) {

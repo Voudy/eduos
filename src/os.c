@@ -77,6 +77,10 @@ static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
 	}
 }
 
+static void os_sigiohnd(int sig, siginfo_t *info, void *ctx) {
+	fprintf(stderr, "%s: called\n", __func__);
+}
+
 static void os_init(void) {
 	struct sigaction act = {
 		.sa_sigaction = os_sighnd,
@@ -86,6 +90,16 @@ static void os_init(void) {
 
 	if (-1 == sigaction(SIGSEGV, &act, NULL)) {
 		perror("signal set failed");
+		exit(1);
+	}
+
+	struct sigaction actio = {
+		.sa_sigaction = os_sigiohnd,
+		.sa_flags = SA_RESTART,
+	};
+	sigemptyset(&actio.sa_mask);
+	if (-1 == sigaction(SIGIO, &actio, NULL)) {
+		perror("SIGIO set failed");
 		exit(1);
 	}
 

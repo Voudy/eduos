@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 
 #include <string.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -53,6 +54,34 @@ static void do_other_things(void) {
 	}
 }
 
+static int block_sig(int sig) {
+	sigset_t newmask, oldmask;
+	sigemptyset(&newmask);
+	sigaddset(&newmask, sig);
+
+	if (-1 == sigprocmask(SIG_BLOCK, &newmask, &oldmask)) {
+		perror("block_sig: sigprocmask");
+		exit(1);
+	}
+
+	return sigismember(&newmask, sig) ? sig : 0;
+}
+
+static void unblock_sig(int sig) {
+	if (!sig) {
+		return;
+	}
+
+	sigset_t newmask;
+	sigemptyset(&newmask);
+	sigaddset(&newmask, sig);
+
+	if (-1 == sigprocmask(SIG_UNBLOCK, &newmask, NULL)) {
+		perror("block_sig: sigprocmask");
+		exit(1);
+	}
+}
+
 static long sys_read(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
@@ -60,13 +89,20 @@ static long sys_read(int syscall,
 	void *buffer = (void *) arg1;
 	const int size = (int) arg2;
 
+	int sig = block_sig(SIGIO);
+	assert("sig should be enabled at that point" && sig == SIGIO);
+
 	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	while (bytes == -EAGAIN) {
 		sleep(5);
 		g_have_input = 0;
+		unblock_sig(sig);
 		do_other_things();
+		sig = block_sig(SIGIO);
 		bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	}
+
+	unblock_sig(sig);
 	return bytes;
 }
 

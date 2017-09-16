@@ -62,6 +62,7 @@ static long sys_read(int syscall,
 
 	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	while (bytes == -EAGAIN) {
+		sleep(5);
 		g_have_input = 0;
 		do_other_things();
 		bytes = errwrap(read(STDIN_FILENO, buffer, size));

@@ -167,9 +167,6 @@ int os_sys_pipe(int *pipefd) {
 
 int main(int argc, char *argv[]) {
 	os_init();
-	if (-1 == shell()) {
-		perror("shell");
-		return -1;
-	}
+	shell();
 	return 0;
 }

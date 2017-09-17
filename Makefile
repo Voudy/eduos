@@ -5,7 +5,7 @@ all : image
 CC = gcc
 CFLAGS = -Wall
 
-image : src/os.o src/apps.o shell/shell.o shell/my_string.o
+image : src/os.o src/apps.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 clean :

@@ -3,7 +3,7 @@
 
 #include "os.h"
 #include "apps.h"
-/*
+
 static int echo(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i) {
 		os_sys_write(argv[i]);
@@ -67,4 +67,3 @@ void shell() {
 	}
 	os_sys_write("\n");
 }
-*/

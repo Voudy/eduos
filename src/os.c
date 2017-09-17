@@ -45,14 +45,6 @@ static long sys_write(int syscall,
 	return errwrap(write(STDOUT_FILENO, msg, strlen(msg)));
 }
 
-static int g_have_input;
-
-static void do_other_things(void) {
-	while (!g_have_input) {
-		usleep(500);
-	}
-}
-
 static int block_sig(int sig) {
 	sigset_t newmask, oldmask;
 	sigemptyset(&newmask);
@@ -81,23 +73,64 @@ static void unblock_sig(int sig) {
 	}
 }
 
+enum sched_state {
+	SCHED_READY,
+	SCHED_SLEEP,
+	SCHED_RUN,
+	SCHED_FINISH,
+};
+
+struct sched_task {
+	syshandler_t hnd;
+	void *arg;
+	int res;
+};
+
+void sched_add(enum sched_state state, int res, syshandler_t hnd, void *arg) {
+	/* TODO */
+}
+
+void sched_notify(int res) {
+	/* TODO */
+	/* task = find in list waiting task */
+	/* change it's result */
+	/* change it's state */
+}
+
+void sched_loop(void) {
+	/* TODO */
+	/* get one READY task */
+	/* call hnd with it's result and arg */
+	while (1) {
+		pause();
+	}
+}
+
+static struct {
+	void *buffer;
+	int size;
+} g_posted_read;
+
 static long sys_read(int syscall,
 		unsigned long arg1, unsigned long arg2,
 		unsigned long arg3, unsigned long arg4,
 		void *rest) {
 	void *buffer = (void *) arg1;
 	const int size = (int) arg2;
+	const syshandler_t hnd = (syshandler_t) arg3;
+	void *const arg = (void *) arg4;
+
 
 	int sig = block_sig(SIGIO);
 	assert("sig should be enabled at that point" && sig == SIGIO);
 
 	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
-	while (bytes == -EAGAIN) {
-		g_have_input = 0;
-		unblock_sig(sig);
-		do_other_things();
-		sig = block_sig(SIGIO);
-		bytes = errwrap(read(STDIN_FILENO, buffer, size));
+	if (bytes == -EAGAIN) {
+		g_posted_read.buffer = buffer;
+		g_posted_read.size = size;
+		sched_add(SCHED_SLEEP, 0, hnd, arg);
+	} else {
+		sched_add(SCHED_READY, bytes, hnd, arg);
 	}
 
 	unblock_sig(sig);
@@ -125,7 +158,10 @@ static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
 }
 
 static void os_sigiohnd(int sig, siginfo_t *info, void *ctx) {
-	g_have_input = 1;
+	int bytes = errwrap(read(STDIN_FILENO, g_posted_read.buffer, g_posted_read.size));
+	if (bytes != -EAGAIN) {
+		sched_notify(bytes);
+	}
 }
 
 static void os_init(void) {
@@ -186,12 +222,14 @@ int os_sys_write(const char *msg) {
 	return os_syscall(os_syscall_nr_write, (unsigned long) msg, 0, 0, 0, NULL);
 }
 
-int os_sys_read(char *buffer, int size) {
-	return os_syscall(os_syscall_nr_read, (unsigned long) buffer, size, 0, 0, NULL);
+int os_sys_read(char *buffer, int size, syshandler_t hnd, void *arg) {
+	return os_syscall(os_syscall_nr_read, (unsigned long) buffer, size,
+			(unsigned long) hnd, (unsigned long) arg, NULL);
 }
 
 int main(int argc, char *argv[]) {
 	os_init();
 	shell();
+	sched_loop();
 	return 0;
 }

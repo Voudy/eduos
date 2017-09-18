@@ -1,6 +1,5 @@
 #define _GNU_SOURCE
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -29,7 +28,6 @@ static int split_command_by_pipeline(struct app apps[], char *command) {
 	char *arg = strtok_r(command, " ", &saveptr);
 	int app_count = 0, app_argc = 0;
 	while (arg) {
-		// printf("%s\n", arg);
 		if (!strcmp(arg, "|")) {
 			apps[app_count].argv[app_argc++] = (char *)0;
 			++app_count;
@@ -62,7 +60,9 @@ static void do_task(char *argv[], int in_fd, int out_fd) {
 			return;
 		}
 	}
-	printf("No such function: %s\n", argv[0]);
+	write(1, "No such function: ", 18);
+	write(1, argv[0], strlen(argv[0]));
+	write(1, "\n", 1);
 }
 
 static void do_pipeline(int app_count, struct app apps[]) {
@@ -80,11 +80,9 @@ static void do_pipeline(int app_count, struct app apps[]) {
 
 int main(int argc, char *argv[]) {
 	while (1) {
-		printf("> ");	
 		char buffer[256];
-		char *b = buffer;
 		size_t bufsize = 256;
-		size_t bytes = getline(&b, &bufsize, stdin);
+		size_t bytes = read(0, buffer, bufsize);
 		if (!bytes) {
 			break;
 		}
@@ -101,6 +99,5 @@ int main(int argc, char *argv[]) {
 			cmd = strtok_r(NULL, comsep, &saveptr);
 		}
 	}
-	printf("\n");
 	return 0;
 }

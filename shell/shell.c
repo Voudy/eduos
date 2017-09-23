@@ -32,11 +32,11 @@ static const struct {
 int run_task(char *task, int in_fd, int out_fd);
 
 int main(int argc, char *argv[]) {
-    printf("%s", SHELL_INTRO);
+    // printf("%s", SHELL_INTRO);
 	while (TRUE) {
-		if (-1 == write(STDOUT_FILENO, "> ", sizeof(char) * 2)) {
-			perror("write");
-		}
+		// if (-1 == write(STDOUT_FILENO, "> ", sizeof(char) * 2)) {
+			// perror("write");
+		// }
 		char buf[256];
 		int actual_size = read(STDIN_FILENO, buf, sizeof(buf));
 		if (-1 == actual_size) {
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (!actual_size) {
-			printf("%s", SHELL_OUTRO);
+			// printf("%s", SHELL_OUTRO);
 			return 0;
 		}
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 			symbol++;
 		}
 	}
-	printf("%s", SHELL_OUTRO);
+	// printf("%s", SHELL_OUTRO);
 	return 0;
 }
 

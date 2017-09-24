@@ -8,15 +8,6 @@
 
 extern char *strtok_r(char *str, const char *delim, char **saveptr);
 
-static const struct {
-	const char *name;
-	const char *path;
-} app_list[] = {
-	{ "echo", "/bin/echo" },
-	{ "seq", "/usr/bin/seq" },
-	{ "grep", "/bin/grep" }
-};
-
 struct app {
 	char *argv[256];
 };
@@ -41,28 +32,30 @@ static int split_command_by_pipeline(struct app apps[], char *command) {
 }
 
 static void do_task(char *argv[], int in_fd, int out_fd) {
-	for (int j = 0; j < ARRAY_SIZE(app_list); ++j) {
-		if (!strcmp(argv[0], app_list[j].name)) {
-			int status;
-			if (fork() != 0) {
-				waitpid(-1, &status, 0);
-			} else {
-				if (in_fd != 0) {
-					dup2(in_fd, 0);
-					close(in_fd);
-				}
-				if (out_fd != 1) {
-					dup2(out_fd, 1);
-					close(out_fd);
-				}
-				execv(app_list[j].path, argv);
-			}
-			return;
+	int status;
+	if (fork() != 0) {
+		waitpid(-1, &status, 0);
+	} else {
+		if (in_fd != 0) {
+			dup2(in_fd, 0);
+			close(in_fd);
 		}
-	}
-	write(1, "No such function: ", 18);
-	write(1, argv[0], strlen(argv[0]));
-	write(1, "\n", 1);
+		if (out_fd != 1) {
+			dup2(out_fd, 1);
+			close(out_fd);
+		}
+		char pathMain[] = "/usr/bin/";
+		char pathError[] = "/bin/";
+		strcat(pathMain, argv[0]);
+		strcat(pathError, argv[0]);
+		if (execv(pathMain, argv) == -1) {
+			if (execv(pathError, argv) == -1) {
+				write(1, "No such function: ", 18);
+				write(1, argv[0], strlen(argv[0]));
+				write(1, "\n", 1);
+			}
+		}
+	}	
 }
 
 static void do_pipeline(int app_count, struct app apps[]) {

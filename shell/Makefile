@@ -1,10 +1,6 @@
 all : shell
 
-CC = gcc
-CFLAGS = -std=c99 -Wall -Werror
-
-shell : shell.o
-	$(CC) $(LDFLAGS) -o $@ $^
+CFLAGS = -std=c99
 
 clean :
 	rm -f shell 1.out

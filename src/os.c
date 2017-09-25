@@ -107,6 +107,7 @@ void sched_add(enum sched_state state, int res, syshandler_t hnd, void *arg) {
 			new_task->hnd = hnd;
 			new_task->arg = arg;
 			TAILQ_INSERT_TAIL(&sched_task_queue.head, new_task, link);
+			return;
 		}
 	}
 }
@@ -127,6 +128,7 @@ void sched_loop(void) {
 		if (TAILQ_EMPTY(&sched_task_queue.head)) {
 			return;
 		}
+		int flag = 0;
 		struct sched_task *task;
 		struct sched_task *next_task;
 		TAILQ_FOREACH_SAFE(task, &sched_task_queue.head, link, next_task) {
@@ -134,8 +136,11 @@ void sched_loop(void) {
 				task->state = SCHED_FINISH;
 				TAILQ_REMOVE(&sched_task_queue.head, task, link);
 				task->hnd(task->res, task->arg);
-				break;
+				flag = 1;
 			}
+		}
+		if (!flag) {
+			pause();
 		}
 	}
 }

@@ -1,6 +1,5 @@
 
 #define _GNU_SOURCE
-#define QUEUE_SIZE ARRAY_SIZE(sched_task_queue.tasks)
 
 #include <string.h>
 #include <assert.h>
@@ -17,6 +16,7 @@
 #include <sys/queue.h>
 
 #include "os.h"
+#include "apps.h"
 
 #define SYSCALL_X(x) \
 	x(write) \
@@ -75,10 +75,10 @@ static void unblock_sig(int sig) {
 }
 
 enum sched_state {
+	SCHED_FINISH,
 	SCHED_READY,
 	SCHED_SLEEP,
 	SCHED_RUN,
-	SCHED_FINISH,
 };
 
 struct sched_task {
@@ -86,44 +86,55 @@ struct sched_task {
 	syshandler_t hnd;
 	void *arg;
 	int res;
+	TAILQ_ENTRY(sched_task) link;
 };
 
 static struct {
-	int head_index;
-	int tail_index;
 	struct sched_task tasks[97];
-	char full;
+	TAILQ_HEAD(listhead, sched_task) head;
 } sched_task_queue;
 
+void sched_init(void) {
+	TAILQ_INIT(&sched_task_queue.head);
+}
+
 void sched_add(enum sched_state state, int res, syshandler_t hnd, void *arg) {
-	struct sched_task *task = &(sched_task_queue.tasks[sched_task_queue.tail_index]);
-	task->state = state;
-	task->res = res;
-	task->hnd = hnd;
-	task->arg = arg;
-	sched_task_queue.tail_index = (sched_task_queue.tail_index + 1) % QUEUE_SIZE;
-	if (sched_task_queue.head_index == sched_task_queue.tail_index) {
-		sched_task_queue.full = TRUE;
+	for (int i = 0; i < 97; ++i) {
+		if (sched_task_queue.tasks[i].state == SCHED_FINISH) {
+			struct sched_task *new_task = &sched_task_queue.tasks[i];
+			new_task->state = state;
+			new_task->res = res;
+			new_task->hnd = hnd;
+			new_task->arg = arg;
+			TAILQ_INSERT_TAIL(&sched_task_queue.head, new_task, link);
+		}
 	}
 }
 
 void sched_notify(int res) {
-	for (int i = sched_task_queue.head_index; i != sched_task_queue.tail_index; i = (i + 1) % QUEUE_SIZE) {
-		if (sched_task_queue.tasks[i].state = SCHED_SLEEP) {
-			sched_task_queue.tasks[i].state = SCHED_READY;
-			sched_task_queue.tasks[i].res = res;
+	struct sched_task *task;
+	TAILQ_FOREACH(task, &sched_task_queue.head, link) {
+		if (task->state == SCHED_SLEEP) {
+			task->state = SCHED_READY;
+			task->res = res;
 			return;
 		}
 	}
 }
 
 void sched_loop(void) {
-	/* TODO */
-	/* get one READY task */
-	/* call hnd with it's result and arg */
 	while (1) {
-		for (int i = sched_task_queue.head_index; i != sched_task_queue.tail_index; i = (i + 1) % QUEUE_SIZE) {
-			/* TODO */
+		if (TAILQ_EMPTY(&sched_task_queue.head)) {
+			abort();
+		}
+		struct sched_task *task;
+		TAILQ_FOREACH(task, &sched_task_queue.head, link) {
+			if (task->state == SCHED_READY) {
+				task->hnd(task->res, task->arg);
+				task->state = SCHED_FINISH;
+				TAILQ_REMOVE(&sched_task_queue.head, task, link);
+				break;
+			}
 		}
 		pause();
 	}
@@ -252,6 +263,7 @@ int os_sys_read(char *buffer, int size, syshandler_t hnd, void *arg) {
 
 int main(int argc, char *argv[]) {
 	os_init();
+	sched_init();
 	shell();
 	sched_loop();
 	return 0;

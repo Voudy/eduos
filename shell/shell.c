@@ -5,8 +5,6 @@
 #include <stddef.h>
 #include <unistd.h>
 #include <signal.h>
-#include <ucontext.h>
-#include <sys/ucontext.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "my_string.h"

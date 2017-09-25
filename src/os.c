@@ -1,14 +1,6 @@
 
 #define _GNU_SOURCE
-
-#define SYS_WRITE 0
-#define SYS_READ 1
-#define SYS_FORK 2
-#define SYS_EXECV 3
-#define SYS_DUP2 4
-#define SYS_CLOSE 5
-#define SYS_WAITPID 6
-#define SYS_PIPE 7
+#define QUEUE_SIZE ARRAY_SIZE(sched_task_queue.tasks)
 
 #include <string.h>
 #include <assert.h>
@@ -22,6 +14,7 @@
 #include <signal.h>
 #include <ucontext.h>
 #include <sys/ucontext.h>
+#include <sys/queue.h>
 
 #include "os.h"
 
@@ -89,20 +82,39 @@ enum sched_state {
 };
 
 struct sched_task {
+	enum sched_state state;
 	syshandler_t hnd;
 	void *arg;
 	int res;
 };
 
+static struct {
+	int head_index;
+	int tail_index;
+	struct sched_task tasks[97];
+	char full;
+} sched_task_queue;
+
 void sched_add(enum sched_state state, int res, syshandler_t hnd, void *arg) {
-	/* TODO */
+	struct sched_task *task = &(sched_task_queue.tasks[sched_task_queue.tail_index]);
+	task->state = state;
+	task->res = res;
+	task->hnd = hnd;
+	task->arg = arg;
+	sched_task_queue.tail_index = (sched_task_queue.tail_index + 1) % QUEUE_SIZE;
+	if (sched_task_queue.head_index == sched_task_queue.tail_index) {
+		sched_task_queue.full = TRUE;
+	}
 }
 
 void sched_notify(int res) {
-	/* TODO */
-	/* task = find in list waiting task */
-	/* change it's result */
-	/* change it's state */
+	for (int i = sched_task_queue.head_index; i != sched_task_queue.tail_index; i = (i + 1) % QUEUE_SIZE) {
+		if (sched_task_queue.tasks[i].state = SCHED_SLEEP) {
+			sched_task_queue.tasks[i].state = SCHED_READY;
+			sched_task_queue.tasks[i].res = res;
+			return;
+		}
+	}
 }
 
 void sched_loop(void) {
@@ -110,6 +122,9 @@ void sched_loop(void) {
 	/* get one READY task */
 	/* call hnd with it's result and arg */
 	while (1) {
+		for (int i = sched_task_queue.head_index; i != sched_task_queue.tail_index; i = (i + 1) % QUEUE_SIZE) {
+			/* TODO */
+		}
 		pause();
 	}
 }
@@ -143,51 +158,6 @@ static long sys_read(int syscall,
 
 	unblock_sig(sig);
 	return bytes;
-}
-static long sys_fork(int syscall,
-		unsigned long arg1, unsigned long arg2,
-		unsigned long arg3, unsigned long arg4,
-		void *rest) {
-	return fork();
-}
-static long sys_execv(int syscall,
-		unsigned long arg1, unsigned long arg2,
-		unsigned long arg3, unsigned long arg4,
-		void *rest) {
-	const char *path = (char*) arg1;
-	char **argv = (char**) arg2;
-	return execv(path, argv);
-}
-static long sys_dup2(int syscall,
-		unsigned long arg1, unsigned long arg2,
-		unsigned long arg3, unsigned long arg4,
-		void *rest) {
-	int oldfd = (int) arg1;
-	int newfd = (int) arg2;
-	return dup2(oldfd, newfd);
-}
-static long sys_close(int syscall,
-		unsigned long arg1, unsigned long arg2,
-		unsigned long arg3, unsigned long arg4,
-		void *rest) {
-	int fd = (int) arg1;
-	return close(fd);
-}
-static long sys_waitpid(int syscall,
-		unsigned long arg1, unsigned long arg2,
-		unsigned long arg3, unsigned long arg4,
-		void *rest) {
-	int pid = (int) arg1;
-	int *status = (int*) arg2;
-	int options = (int) arg3;
-	return waitpid(pid, status, options);
-}
-static long sys_pipe(int syscall,
-		unsigned long arg1, unsigned long arg2,
-		unsigned long arg3, unsigned long arg4,
-		void *rest) {
-	int *pipefd = (int*) arg1;
-	return pipe(pipefd);
 }
 
 #define TABLE_LIST(name) sys_ ## name,

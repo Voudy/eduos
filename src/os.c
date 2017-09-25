@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <ucontext.h>
 #include <sys/ucontext.h>
-#include <sys/queue.h>
+#include <bsd/sys/queue.h>
 
 #include "os.h"
 #include "apps.h"
@@ -125,18 +125,18 @@ void sched_notify(int res) {
 void sched_loop(void) {
 	while (1) {
 		if (TAILQ_EMPTY(&sched_task_queue.head)) {
-			abort();
+			return;
 		}
 		struct sched_task *task;
-		TAILQ_FOREACH(task, &sched_task_queue.head, link) {
+		struct sched_task *next_task;
+		TAILQ_FOREACH_SAFE(task, &sched_task_queue.head, link, next_task) {
 			if (task->state == SCHED_READY) {
-				task->hnd(task->res, task->arg);
 				task->state = SCHED_FINISH;
 				TAILQ_REMOVE(&sched_task_queue.head, task, link);
+				task->hnd(task->res, task->arg);
 				break;
 			}
 		}
-		pause();
 	}
 }
 

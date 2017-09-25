@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <ucontext.h>
 #include <sys/ucontext.h>
-#include <bsd/sys/queue.h>
+#include <sys/queue.h>
 
 #include "os.h"
 #include "apps.h"

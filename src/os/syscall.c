@@ -55,17 +55,17 @@ static long sys_read(int syscall,
 	void *buffer = (void *) arg1;
 	const int size = (int) arg2;
 
-	int sig = block_sig(SIGIO);
-	assert("sig should be enabled at that point" && sig == SIGIO);
+	irqmask_t cur = irq_disable();
 
 	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	while (bytes == -EAGAIN) {
 		irq_hnd = read_irq_hnd;
+		sched_wait();
 		sched();
 		bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	}
 
-	unblock_sig(sig);
+	irq_enable(cur);
 	return bytes;
 }
 

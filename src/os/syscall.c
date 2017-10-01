@@ -44,16 +44,8 @@ static long sys_write(int syscall,
 	return errwrap(write(STDOUT_FILENO, msg, strlen(msg)));
 }
 
-static struct {
-	void *buffer;
-	int size;
-} g_posted_read;
-
 static void read_irq_hnd(void) {
-	int bytes = errwrap(read(STDIN_FILENO, g_posted_read.buffer, g_posted_read.size));
-	if (bytes != -EAGAIN) {
-		sched_notify(bytes);
-	}
+	sched_notify();
 }
 
 static long sys_read(int syscall,
@@ -62,20 +54,15 @@ static long sys_read(int syscall,
 		void *rest) {
 	void *buffer = (void *) arg1;
 	const int size = (int) arg2;
-	const syshandler_t hnd = (syshandler_t) arg3;
-	void *const arg = (void *) arg4;
 
 	int sig = block_sig(SIGIO);
 	assert("sig should be enabled at that point" && sig == SIGIO);
 
 	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
-	if (bytes == -EAGAIN) {
-		g_posted_read.buffer = buffer;
-		g_posted_read.size = size;
+	while (bytes == -EAGAIN) {
 		irq_hnd = read_irq_hnd;
-		sched_add(SCHED_SLEEP, 0, hnd, arg);
-	} else {
-		sched_add(SCHED_READY, bytes, hnd, arg);
+		sched();
+		bytes = errwrap(read(STDIN_FILENO, buffer, size));
 	}
 
 	unblock_sig(sig);
@@ -106,9 +93,9 @@ int os_sys_write(const char *msg) {
 	return os_syscall(os_syscall_nr_write, (unsigned long) msg, 0, 0, 0, NULL);
 }
 
-int os_sys_read(char *buffer, int size, syshandler_t hnd, void *arg) {
+int os_sys_read(char *buffer, int size) {
 	return os_syscall(os_syscall_nr_read, (unsigned long) buffer, size,
-			(unsigned long) hnd, (unsigned long) arg, NULL);
+			0, 0, NULL);
 }
 
 static void os_sighnd(int sig, siginfo_t *info, void *ctx) {

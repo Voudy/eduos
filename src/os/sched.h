@@ -11,20 +11,21 @@ enum sched_state {
 	SCHED_RUN,
 };
 
+typedef void (*sched_task_t)(void *arg);
+
 struct sched_task {
-	enum sched_state state;
-	syshandler_t hnd;
-	void *arg;
-	int res;
 	TAILQ_ENTRY(sched_task) link;
+	enum sched_state state;
+	sched_task_t entry;
+	void *arg;
 };
 
-extern void sched_add(enum sched_state state, int res, syshandler_t hnd, void *arg);
-
-extern void sched_notify(int res);
+extern void sched_add(sched_task_t entry, void *arg);
+extern void sched_wait(void);
+extern void sched_notify();
+extern void sched(void);
 
 extern void sched_init(void);
-
 extern void sched_loop(void);
 
 #endif /* EDUOS_OS_SCHED_H */

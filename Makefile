@@ -2,8 +2,13 @@ all : image
 
 #src/apps.o : CFLAGS = -ffreestanding --sysroot=/tmp -Wimplicit-function-declaration -Werror
 
+ifneq ($(DEBUG),)
+CFLAGS += -g
+LDFLAGS += -g
+endif
+
 CC = gcc
-CFLAGS = -std=c99 -I$(PWD) -Wall -Werror
+CFLAGS += -std=c99 -I$(PWD) -Wall -Werror
 
 KERNEL = os os/irq os/syscall os/sched os/time
 

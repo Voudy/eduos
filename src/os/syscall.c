@@ -23,6 +23,7 @@ typedef long(*sys_call_t)(int syscall,
 #define SYSCALL_X(x) \
 	x(write) \
 	x(read) \
+	x(halt) \
 
 
 
@@ -69,6 +70,13 @@ static long sys_read(int syscall,
 	return bytes;
 }
 
+static long sys_halt(int syscall,
+		unsigned long arg1, unsigned long arg2,
+		unsigned long arg3, unsigned long arg4,
+		void *rest) {
+	exit(arg1);
+}
+
 #define TABLE_LIST(name) sys_ ## name,
 static const sys_call_t sys_table[] = {
 	SYSCALL_X(TABLE_LIST)
@@ -96,6 +104,10 @@ int os_sys_write(const char *msg) {
 int os_sys_read(char *buffer, int size) {
 	return os_syscall(os_syscall_nr_read, (unsigned long) buffer, size,
 			0, 0, NULL);
+}
+
+int os_halt(int status) {
+	return os_syscall(os_syscall_nr_halt, status, 0, 0, 0, NULL);
 }
 
 static void os_sighnd(int sig, siginfo_t *info, void *ctx) {

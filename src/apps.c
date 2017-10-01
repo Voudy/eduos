@@ -78,4 +78,5 @@ void shell() {
 		}
 	}
 	os_sys_write("\n");
+	os_halt(0);
 }

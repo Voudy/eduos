@@ -11,18 +11,21 @@ enum sched_state {
 	SCHED_RUN,
 };
 
-typedef void (*sched_task_t)(void *arg);
+typedef void (*sched_task_entry_t)(void *arg);
 
 struct sched_task {
 	TAILQ_ENTRY(sched_task) link;
 	enum sched_state state;
-	sched_task_t entry;
+	sched_task_entry_t entry;
 	void *arg;
 };
 
-extern void sched_add(sched_task_t entry, void *arg);
+extern struct sched_task *sched_add(sched_task_entry_t entry, void *arg);
 extern void sched_wait(void);
-extern void sched_notify();
+extern void sched_notify(struct sched_task *task);
+
+extern struct sched_task *sched_current(void);
+
 extern void sched(void);
 
 extern void sched_init(void);

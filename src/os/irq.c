@@ -11,12 +11,19 @@
 #include "os.h"
 #include "os/irq.h"
 
-void (*irq_hnd)(void);
 static sigset_t allmask;
+
+static irq_hnd_t irq_hnd;
+static void *irq_args;
+
+void irq_set_hnd(irq_hnd_t hnd, void *args) {
+	irq_hnd = hnd;
+	irq_args = args;
+}
 
 static void os_sigiohnd(int sig, siginfo_t *info, void *ctx) {
 	if (irq_hnd) {
-		irq_hnd();
+		irq_hnd(irq_args);
 	}
 }
 

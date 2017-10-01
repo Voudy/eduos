@@ -56,7 +56,7 @@ static int do_task(char *command) {
 	return 1;
 }
 
-void shell() {
+void shell(void *args) {
 	while (1) {
 		os_sys_write("> ");
 		char buffer[256];

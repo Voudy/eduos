@@ -58,25 +58,23 @@ irqmask_t irq_disable(void) {
 }
 
 void irq_enable(irqmask_t mask) {
-	if (!mask) {
-		return;
-	}
-
 	sigset_t new;
 	mask2set(mask, &new);
-	if (-1 == sigprocmask(SIG_UNBLOCK, &new, NULL)) {
+	if (-1 == sigprocmask(SIG_SETMASK, &new, NULL)) {
 		perror("block_sig: sigprocmask");
 		exit(1);
 	}
 }
 
 int irq_init(void) {
+	sigfillset(&allmask);
+	irq_disable();
+
 	struct sigaction actio = {
 		.sa_sigaction = os_sigiohnd,
 		.sa_flags = SA_RESTART,
 	};
 
-	sigfillset(&allmask);
 
 	sigemptyset(&actio.sa_mask);
 	if (-1 == sigaction(SIGIO, &actio, NULL)) {

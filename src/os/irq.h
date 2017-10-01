@@ -2,7 +2,7 @@
 #define EDUOS_OS_IRQ_H
 
 #define IRQ_MAX_SHIFT 32
-#define IRQ_ALL ((1 << IRQ_MAX_SHIFT) - 1)
+#define IRQ_ALL 0
 
 typedef unsigned long irqmask_t;
 

@@ -1,15 +1,19 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include "util.h"
 
 #include "os.h"
 #include "os/sched.h"
+#include "os/irq.h"
 
 static struct {
 	struct sched_task tasks[256];
 	TAILQ_HEAD(listhead, sched_task) head;
 	struct sched_task *current;
+	struct sched_task *idle;
 } sched_task_queue;
 
 static struct sched_task *new_task(void) {
@@ -21,17 +25,36 @@ static struct sched_task *new_task(void) {
 	return NULL;
 }
 
+void task_tramp(sched_task_entry_t entry, void *arg) {
+	irq_enable(IRQ_ALL);
+	entry(arg);
+	abort();
+}
+
+static void task_init(struct sched_task *task) {
+	ucontext_t *ctx = &task->ctx;
+	const int stacksize = sizeof(task->stack);
+	memset(ctx, 0, sizeof(*ctx));
+	getcontext(ctx);
+
+	ctx->uc_stack.ss_sp = task->stack + stacksize;
+	ctx->uc_stack.ss_size = 0;
+}
+
 struct sched_task *sched_add(sched_task_entry_t entry, void *arg) {
+	irqmask_t irq = irq_disable();
 	struct sched_task *task = new_task();
+	task->state = SCHED_READY;
+	irq_enable(irq);
 
 	if (!task) {
 		abort();
 	}
 
-	task->state = SCHED_READY;
-	task->entry = entry;
-	task->arg = arg;
+	task_init(task);
+	makecontext(&task->ctx, (void(*)(void)) task_tramp, 2, entry, arg);
 	TAILQ_INSERT_TAIL(&sched_task_queue.head, task, link);
+
 	return task;
 }
 
@@ -47,38 +70,48 @@ struct sched_task *sched_current(void) {
 	return sched_task_queue.current;
 }
 
+static struct sched_task *next_task(void) {
+	struct sched_task *task;
+	TAILQ_FOREACH(task, &sched_task_queue.head, link) {
+		if (task != sched_task_queue.idle && task->state == SCHED_READY) {
+			return task;
+		}
+	}
+
+	return sched_task_queue.idle;
+}
+
 void sched(void) {
-	/* TODO context_switch */
-	sched_current()->state = SCHED_RUN;
+	irqmask_t irq = irq_disable();
+
+	struct sched_task *cur = sched_current();
+	struct sched_task *next = next_task();
+
+	if (cur != next) {
+		sched_task_queue.current = next;
+		swapcontext(&cur->ctx, &next->ctx);
+	}
+
+	irq_enable(irq);
 }
 
 void sched_init(void) {
 	TAILQ_INIT(&sched_task_queue.head);
-}
 
-static struct sched_task *next_task(void) {
-	struct sched_task *task;
-	TAILQ_FOREACH(task, &sched_task_queue.head, link) {
-		if (task->state == SCHED_READY) {
-			return task;
-		}
-	}
-	return NULL;
+	struct sched_task *task = new_task();
+	task_init(task);
+	task->state = SCHED_READY;
+	TAILQ_INSERT_TAIL(&sched_task_queue.head, task, link);
+
+	sched_task_queue.idle = task;
+	sched_task_queue.current = task;
 }
 
 void sched_loop(void) {
+	irq_enable(IRQ_ALL);
+
+	sched();
 	while (1) {
-		struct sched_task *task = next_task();
-		if (task) {
-			TAILQ_REMOVE(&sched_task_queue.head, task, link);
-			sched_task_queue.current = task;
-			task->state = SCHED_RUN;
-			task->entry(task->arg);
-			task->state = SCHED_FINISH;
-		} else {
-			pause();
-		}
+		pause();
 	}
 }
-
-

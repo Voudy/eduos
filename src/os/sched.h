@@ -4,6 +4,8 @@
 
 #include "third-party/queue.h"
 
+#include <ucontext.h>
+
 enum sched_state {
 	SCHED_FINISH,
 	SCHED_READY,
@@ -15,9 +17,9 @@ typedef void (*sched_task_entry_t)(void *arg);
 
 struct sched_task {
 	TAILQ_ENTRY(sched_task) link;
+	ucontext_t ctx;
+	char stack[4096];
 	enum sched_state state;
-	sched_task_entry_t entry;
-	void *arg;
 };
 
 extern struct sched_task *sched_add(sched_task_entry_t entry, void *arg);

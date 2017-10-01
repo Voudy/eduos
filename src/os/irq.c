@@ -11,6 +11,8 @@
 #include "os.h"
 #include "os/irq.h"
 
+extern void sched_tramp(void);
+
 static sigset_t allmask;
 
 static irq_hnd_t irq_hnd;
@@ -25,6 +27,13 @@ static void os_sigiohnd(int sig, siginfo_t *info, void *ctx) {
 	if (irq_hnd) {
 		irq_hnd(irq_args);
 	}
+
+	ucontext_t *uc = (ucontext_t *) ctx;
+	greg_t *regs = uc->uc_mcontext.gregs;
+
+	regs[REG_RSP] -= 8;
+	*(unsigned long*) regs[REG_RSP] = regs[REG_RIP];
+	regs[REG_RIP] = (greg_t) sched_tramp;
 }
 
 static irqmask_t set2mask(sigset_t *set) {

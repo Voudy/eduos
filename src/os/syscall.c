@@ -121,6 +121,8 @@ static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
 				(void *) regs[REG_RDI]);
 		regs[REG_RAX] = ret;
 		regs[REG_RIP] += 2;
+	} else {
+		abort();
 	}
 }
 

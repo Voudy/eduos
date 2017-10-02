@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <ucontext.h>
 #include <sys/ucontext.h>
+#include <sys/queue.h>
 
 #include "os.h"
 #include "apps.h"
@@ -74,35 +75,73 @@ static void unblock_sig(int sig) {
 }
 
 enum sched_state {
+	SCHED_FINISH,
 	SCHED_READY,
 	SCHED_SLEEP,
 	SCHED_RUN,
-	SCHED_FINISH,
 };
 
 struct sched_task {
+	enum sched_state state;
 	syshandler_t hnd;
 	void *arg;
 	int res;
+	TAILQ_ENTRY(sched_task) link;
 };
 
+static struct sched_queue {
+	struct sched_task tasks[256];
+	TAILQ_HEAD(listhead, sched_task) head;
+} schedule;
+
+void sched_init() {
+	TAILQ_INIT(&schedule.head);
+}
+
 void sched_add(enum sched_state state, int res, syshandler_t hnd, void *arg) {
-	/* TODO */
+	for (int i = 0; i < 256; ++i) {
+		if (schedule.tasks[i].state == SCHED_FINISH) {
+			struct sched_task *new_task = &schedule.tasks[i];
+			new_task->state = state;
+			new_task->res = res;
+			new_task->hnd = hnd;
+			new_task->arg = arg;
+			TAILQ_INSERT_TAIL(&schedule.head, new_task, link);
+			return;
+		}
+	}
 }
 
 void sched_notify(int res) {
-	/* TODO */
-	/* task = find in list waiting task */
-	/* change it's result */
-	/* change it's state */
+	struct sched_task *task;
+	TAILQ_FOREACH(task, &schedule.head, link) {
+		if (task->state == SCHED_SLEEP) {
+			task->state = SCHED_READY;
+			task->res = res;
+			return;
+		}
+	}
 }
 
 void sched_loop(void) {
-	/* TODO */
-	/* get one READY task */
-	/* call hnd with it's result and arg */
 	while (1) {
-		pause();
+		if (TAILQ_EMPTY(&schedule.head)) {
+			abort();
+		}
+		char is_found = 0;
+		struct sched_task *task;
+		TAILQ_FOREACH(task, &schedule.head, link) {
+			if (task->state == SCHED_READY) {
+				task->hnd(task->res, task->arg);
+				task->state = SCHED_FINISH;
+				TAILQ_REMOVE(&schedule.head, task, link);
+				is_found = 1;
+				break;
+			}
+		}
+		if (!is_found) {
+			pause();
+		}
 	}
 }
 
@@ -229,6 +268,7 @@ int os_sys_read(char *buffer, int size, syshandler_t hnd, void *arg) {
 
 int main(int argc, char *argv[]) {
 	os_init();
+	sched_init();
 	shell();
 	sched_loop();
 	return 0;

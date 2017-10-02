@@ -73,6 +73,8 @@ struct sched_task *sched_current(void) {
 static struct sched_task *next_task(void) {
 	struct sched_task *task;
 	TAILQ_FOREACH(task, &sched_task_queue.head, link) {
+		/* TODO only READY tasks in queue */
+		/* TODO priority */
 		if (task != sched_task_queue.idle && task->state == SCHED_READY) {
 			return task;
 		}
@@ -111,6 +113,7 @@ void sched_loop(void) {
 	irq_enable(IRQ_ALL);
 
 	sched();
+
 	while (1) {
 		pause();
 	}

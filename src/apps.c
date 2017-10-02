@@ -45,7 +45,10 @@ static int do_task(char *command) {
 
 	for (int i = 0; i < ARRAY_SIZE(app_list); ++i) {
 		if (!strcmp(argv[0], app_list[i].name)) {
+			/* TODO run as sched task */
 			return app_list[i].fn(argc, argv);
+			/* TODO exit */
+			/* TODO waitpid? */
 		}
 	}
 
@@ -77,6 +80,7 @@ void shell(void *args) {
 			cmd = strtok_r(NULL, comsep, &saveptr);
 		}
 	}
+
 	os_sys_write("\n");
 	os_halt(0);
 }

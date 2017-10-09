@@ -1,12 +1,20 @@
-
 all : image
 
 #src/apps.o : CFLAGS = -ffreestanding --sysroot=/tmp -Wimplicit-function-declaration -Werror
 
-CC = gcc
-CFLAGS = -std=c99 -Wall -Werror
+ifneq ($(DEBUG),)
+CFLAGS += -g
+LDFLAGS += -g
+endif
 
-image : src/os.o src/apps.o
+CC = gcc
+CFLAGS += -std=c99 -I$(PWD) -Wall -Werror
+
+KERNEL = os os/irq os/syscall os/sched os/asm_sched os/time
+
+$(KERNEL:%=src/%.o) : CFLAGS += -I$(PWD)/src
+
+image : $(KERNEL:%=src/%.o) src/apps.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 clean :

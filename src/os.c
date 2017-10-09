@@ -1,12 +1,6 @@
 
-#define _GNU_SOURCE
-
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include <stddef.h>
+<<<<<<< HEAD
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -159,117 +153,36 @@ static long sys_read(int syscall,
 	const syshandler_t hnd = (syshandler_t) arg3;
 	void *const arg = (void *) arg4;
 
+=======
 
-	int sig = block_sig(SIGIO);
-	assert("sig should be enabled at that point" && sig == SIGIO);
+#include "os.h"
+#include "os/syscall.h"
+#include "os/irq.h"
+#include "os/sched.h"
+#include "os/time.h"
+>>>>>>> e98c7b13231733eef1409476fa950eb9774a3b03
 
-	int bytes = errwrap(read(STDIN_FILENO, buffer, size));
-	if (bytes == -EAGAIN) {
-		g_posted_read.buffer = buffer;
-		g_posted_read.size = size;
-		sched_add(SCHED_SLEEP, 0, hnd, arg);
-	} else {
-		sched_add(SCHED_READY, bytes, hnd, arg);
-	}
+#include "apps.h"
 
-	unblock_sig(sig);
-	return bytes;
-}
+int main(int argc, char *argv[]) {
+	irq_init();
 
-#define TABLE_LIST(name) sys_ ## name,
-static const sys_call_t sys_table[] = {
-	SYSCALL_X(TABLE_LIST)
-};
-#undef TABLE_LIST
+	syscall_init();
 
-static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
-	ucontext_t *uc = (ucontext_t *) ctx;
-	greg_t *regs = uc->uc_mcontext.gregs;
+	time_init();
 
-	if (0x81cd == *(uint16_t *) regs[REG_RIP]) {
-		int ret = sys_table[regs[REG_RAX]](regs[REG_RAX],
-				regs[REG_RBX], regs[REG_RCX],
-				regs[REG_RDX], regs[REG_RSI],
-				(void *) regs[REG_RDI]);
-		regs[REG_RAX] = ret;
-		regs[REG_RIP] += 2;
-	}
-}
+	sched_init();
 
-static void os_sigiohnd(int sig, siginfo_t *info, void *ctx) {
-	int bytes = errwrap(read(STDIN_FILENO, g_posted_read.buffer, g_posted_read.size));
-	if (bytes != -EAGAIN) {
-		sched_notify(bytes);
-	}
-}
+	sched_add(shell, NULL);
 
-static void os_init(void) {
-	struct sigaction act = {
-		.sa_sigaction = os_sighnd,
-		.sa_flags = SA_RESTART,
-	};
-	sigemptyset(&act.sa_mask);
-
-	if (-1 == sigaction(SIGSEGV, &act, NULL)) {
-		perror("signal set failed");
-		exit(1);
-	}
-
-	struct sigaction actio = {
-		.sa_sigaction = os_sigiohnd,
-		.sa_flags = SA_RESTART,
-	};
-	sigemptyset(&actio.sa_mask);
-	if (-1 == sigaction(SIGIO, &actio, NULL)) {
-		perror("SIGIO set failed");
-		exit(1);
-	}
-
-	if (-1 == fcntl(STDIN_FILENO, F_SETOWN, getpid())) {
-		perror("fcntl SETOWN");
-		exit(1);
-	}
-
-	int flags;
-	if (-1 == (flags = fcntl(STDIN_FILENO, F_GETFL))) {
-		perror("fcntl GETFL");
-		exit(1);
-	}
-
-	flags |= O_NONBLOCK | O_ASYNC;
-	if (-1 == fcntl(STDIN_FILENO, F_SETFL, flags)) {
-		perror("fcntl SETFL");
-		exit(1);
-	}
-}
-
-static long os_syscall(int syscall,
-		unsigned long arg1, unsigned long arg2,
-		unsigned long arg3, unsigned long arg4,
-		void *rest) {
-	long ret;
-	__asm__ __volatile__(
-		"int $0x81\n"
-		: "=a"(ret)
-		: "a"(syscall), "b"(arg1), "c"(arg2), "d"(arg3), "S"(arg4), "D"(rest)
-		:
-	);
-	return ret;
-}
-
-int os_sys_write(const char *msg) {
-	return os_syscall(os_syscall_nr_write, (unsigned long) msg, 0, 0, 0, NULL);
-}
-
-int os_sys_read(char *buffer, int size, syshandler_t hnd, void *arg) {
-	return os_syscall(os_syscall_nr_read, (unsigned long) buffer, size,
-			(unsigned long) hnd, (unsigned long) arg, NULL);
-}
-
+<<<<<<< HEAD
 int main(int argc, char *argv[]) {
 	os_init();
 	sched_init();
 	shell();
+=======
+>>>>>>> e98c7b13231733eef1409476fa950eb9774a3b03
 	sched_loop();
+
 	return 0;
 }

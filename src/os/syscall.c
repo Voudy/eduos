@@ -24,6 +24,7 @@ typedef long(*sys_call_t)(int syscall,
 	x(write) \
 	x(read) \
 	x(halt) \
+	x(waitpid) \
 
 
 
@@ -77,6 +78,25 @@ static long sys_halt(int syscall,
 	exit(arg1);
 }
 
+static long sys_waitpid(int syscall,
+		unsigned long arg1, unsigned long arg2,
+		unsigned long arg3, unsigned long arg4,
+		void *rest) {
+	int task_id = arg1;
+	struct sched_task *task = sched_task_queue.tasks[task_id];
+
+	irqmask_t cur = irq_disable();
+
+	while (task->state != SCHED_FINISH) {
+		sched_wait();
+		sched();
+	}
+
+	irq_enable(cur);
+
+	return 0;
+}
+
 #define TABLE_LIST(name) sys_ ## name,
 static const sys_call_t sys_table[] = {
 	SYSCALL_X(TABLE_LIST)
@@ -108,6 +128,10 @@ int os_sys_read(char *buffer, int size) {
 
 int os_halt(int status) {
 	return os_syscall(os_syscall_nr_halt, status, 0, 0, 0, NULL);
+}
+
+int os_waitpid(int task_id) {
+	return os_syscall(os_syscall_nr_waitpid, (unsigned long) task_id, 0, 0, 0, NULL);
 }
 
 static void os_sighnd(int sig, siginfo_t *info, void *ctx) {
